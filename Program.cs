@@ -1,4 +1,5 @@
 ﻿using System.Runtime.InteropServices;
+using AntennaSwitch.View;
 using Terminal.Gui;
 
 namespace AntennaSwitch;
@@ -7,13 +8,12 @@ public static class Program
 {
     private const string SwitchIp = "192.168.8.140";
     private static AntennaSwitchWindow? _window;
-
     private static void Main()
     {
         Application.Init();
         Console.Clear();
 
-        if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) Console.SetWindowSize(48, 6);
+        if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) Console.SetWindowSize(48, 7);
 
         var sw = new AntennaSwitchClient(SwitchIp);
         var bd = new BandDecoder(sw);

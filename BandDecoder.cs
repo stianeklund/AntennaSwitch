@@ -1,6 +1,7 @@
 ﻿using System.IO.Ports;
 using System.Text;
 using System.Timers;
+using AntennaSwitch.OmniRig;
 using Terminal.Gui;
 using Timer = System.Timers.Timer;
 
@@ -13,7 +14,9 @@ namespace AntennaSwitch;
 public sealed class BandDecoder : IDisposable
 {
     private readonly AntennaSwitchClient _antennaSwitch;
+    public readonly OmniRigClient? OmniRigClient = OmniRigClient.CreateInstance();
     private bool _disposed;
+    public bool UseOmniRig { get; set; }
 
     public BandDecoder(AntennaSwitchClient antennaSwitch)
     {
@@ -27,12 +30,26 @@ public sealed class BandDecoder : IDisposable
         bandDecoder.AutoReset = true;
         bandDecoder.Elapsed += BandDecoderTimer;
 
-        OpenSerialPort();
+        switch (UseOmniRig)
+        {
+            case true:
+                OmniRigClient.StartOmniRig();
+                if (OmniRigClient?.OmniRigEngine != null)
+                {
+                    OmniRigClient.OmniRigEngine.StatusChange += OmniRigEngineOnStatusChange;
+                }
+                break;
+            case false:
+                SerialPort = new();
+                OpenSerialPort();
+                break;
+        }
     }
 
-    public SerialPort SerialPort { get; } = new();
+    public SerialPort? SerialPort { get; }
 
     public string? BandName { get; private set; }
+    public string? Mode { get; private set; }
     public string? Frequency { get; private set; }
 
     public void Dispose()
@@ -41,13 +58,22 @@ public sealed class BandDecoder : IDisposable
         GC.SuppressFinalize(this);
     }
 
+    private void OmniRigEngineOnStatusChange(int rigNumber)
+    {
+        Console.WriteLine($"Status change:{rigNumber}");
+    }
+
     private void BandDecoderTimer(object? sender, ElapsedEventArgs e)
     {
+        if (Frequency == null && UseOmniRig) Frequency = OmniRigClient?.Rig?.GetRxFrequency().ToString();
         if (Frequency != null && !_antennaSwitch.Switching) DecodeBand(Frequency);
+        OmniRigClient?.ShowRigParams();
+        Mode = OmniRigClient?.Mode;
     }
 
     private void OpenSerialPort()
     {
+        if (SerialPort is null) return;
         if (SerialPort.IsOpen) return;
 
         SerialPort.PortName = "COM10";
@@ -173,6 +199,7 @@ public sealed class BandDecoder : IDisposable
             _antennaSwitch.SetAntennaSwitchToWantedAntenna();
     }
 
+
     private void ParseSerialData(string msg)
     {
         try
@@ -200,8 +227,11 @@ public sealed class BandDecoder : IDisposable
 
         if (disposing)
         {
-            SerialPort.DataReceived -= SerialPortOnDataReceived;
-            SerialPort.Dispose();
+            if (SerialPort != null)
+            {
+                SerialPort.DataReceived -= SerialPortOnDataReceived;
+                SerialPort.Dispose();
+            }
         }
 
         _disposed = true;

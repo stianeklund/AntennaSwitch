@@ -132,7 +132,8 @@ public class AntennaSwitchClient
             if (SelectedAntenna == WantedAntenna)
                 return;
             GetSelectedAntennaFromSwitch(direction);
-            Thread.Sleep(200);
+            // We need to wait a little for the web interface to update..
+            Thread.Sleep(1000);
             Switching = true;
         }
 

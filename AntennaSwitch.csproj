@@ -8,8 +8,19 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <PackageReference Include="System.IO.Ports" Version="7.0.0"/>
-        <PackageReference Include="Terminal.Gui" Version="1.10.1"/>
+        <COMReference Include="OmniRig">
+            <WrapperTool>tlbimp</WrapperTool>
+            <VersionMinor>0</VersionMinor>
+            <VersionMajor>1</VersionMajor>
+            <Guid>4fe359c5-a58f-459d-be95-ca559fb4f270</Guid>
+            <Lcid>0</Lcid>
+            <Isolated>false</Isolated>
+            <EmbedInteropTypes>true</EmbedInteropTypes>
+        </COMReference>
     </ItemGroup>
 
+    <ItemGroup>
+        <PackageReference Include="System.IO.Ports" Version="7.0.0" />
+        <PackageReference Include="Terminal.Gui" Version="1.10.1" />
+    </ItemGroup>
 </Project>

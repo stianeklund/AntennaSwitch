@@ -8,7 +8,7 @@
 //      the code is regenerated.
 //  </auto-generated>
 // -----------------------------------------------------------------------------
-namespace AntennaSwitch {
+namespace AntennaSwitch.View {
     using System;
     using Terminal.Gui;
     
@@ -41,6 +41,8 @@ namespace AntennaSwitch {
         
         private Terminal.Gui.CheckBox supportsBandCheckBox;
         
+        private Terminal.Gui.CheckBox useOmniRigCheckbox;
+        
         private Terminal.Gui.Label comPortLabel;
         
         private Terminal.Gui.Label comPortValueLabel;
@@ -48,6 +50,7 @@ namespace AntennaSwitch {
         private void InitializeComponent() {
             this.comPortValueLabel = new Terminal.Gui.Label();
             this.comPortLabel = new Terminal.Gui.Label();
+            this.useOmniRigCheckbox = new Terminal.Gui.CheckBox();
             this.supportsBandCheckBox = new Terminal.Gui.CheckBox();
             this.wantedAntennaValueLabel = new Terminal.Gui.Label();
             this.wantedAntennaLabel = new Terminal.Gui.Label();
@@ -82,8 +85,8 @@ namespace AntennaSwitch {
             this.Y = 0;
             this.Modal = false;
             this.TextAlignment = Terminal.Gui.TextAlignment.Left;
-            this.antennaSwitchFrameView.Width = 47;
-            this.antennaSwitchFrameView.Height = 6;
+            this.antennaSwitchFrameView.Width = 46;
+            this.antennaSwitchFrameView.Height = 7;
             this.antennaSwitchFrameView.X = 0;
             this.antennaSwitchFrameView.Y = 0;
             this.antennaSwitchFrameView.ColorScheme = this.greenOnBlack;
@@ -125,7 +128,7 @@ namespace AntennaSwitch {
             this.antennaSwitchFrameView.Add(this.currentAntennaLabel);
             this.currentAntennaValueLabel.Width = 4;
             this.currentAntennaValueLabel.Height = 1;
-            this.currentAntennaValueLabel.X = 36;
+            this.currentAntennaValueLabel.X = 34;
             this.currentAntennaValueLabel.Y = 1;
             this.currentAntennaValueLabel.ColorScheme = this.scheme;
             this.currentAntennaValueLabel.Data = "currentAntennaValueLabel";
@@ -150,7 +153,7 @@ namespace AntennaSwitch {
             this.bandValueLabel.Text = "12m";
             this.bandValueLabel.TextAlignment = Terminal.Gui.TextAlignment.Left;
             this.antennaSwitchFrameView.Add(this.bandValueLabel);
-            this.wantedAntennaLabel.Width = 10;
+            this.wantedAntennaLabel.Width = 8;
             this.wantedAntennaLabel.Height = 1;
             this.wantedAntennaLabel.X = 25;
             this.wantedAntennaLabel.Y = 2;
@@ -161,7 +164,7 @@ namespace AntennaSwitch {
             this.antennaSwitchFrameView.Add(this.wantedAntennaLabel);
             this.wantedAntennaValueLabel.Width = 10;
             this.wantedAntennaValueLabel.Height = 1;
-            this.wantedAntennaValueLabel.X = 36;
+            this.wantedAntennaValueLabel.X = 34;
             this.wantedAntennaValueLabel.Y = 2;
             this.wantedAntennaValueLabel.ColorScheme = this.scheme;
             this.wantedAntennaValueLabel.Data = "wantedAntennaValueLabel";
@@ -178,7 +181,17 @@ namespace AntennaSwitch {
             this.supportsBandCheckBox.TextAlignment = Terminal.Gui.TextAlignment.Right;
             this.supportsBandCheckBox.Checked = false;
             this.antennaSwitchFrameView.Add(this.supportsBandCheckBox);
-            this.comPortLabel.Width = 10;
+            this.useOmniRigCheckbox.Width = 1;
+            this.useOmniRigCheckbox.Height = 1;
+            this.useOmniRigCheckbox.X = 25;
+            this.useOmniRigCheckbox.Y = 3;
+            this.useOmniRigCheckbox.ColorScheme = this.scheme;
+            this.useOmniRigCheckbox.Data = "useOmniRigCheckbox";
+            this.useOmniRigCheckbox.Text = "Use OmniRig:";
+            this.useOmniRigCheckbox.TextAlignment = Terminal.Gui.TextAlignment.Right;
+            this.useOmniRigCheckbox.Checked = true;
+            this.antennaSwitchFrameView.Add(this.useOmniRigCheckbox);
+            this.comPortLabel.Width = 9;
             this.comPortLabel.Height = 1;
             this.comPortLabel.X = 25;
             this.comPortLabel.Y = 3;
@@ -189,7 +202,7 @@ namespace AntennaSwitch {
             this.antennaSwitchFrameView.Add(this.comPortLabel);
             this.comPortValueLabel.Width = 10;
             this.comPortValueLabel.Height = 1;
-            this.comPortValueLabel.X = 36;
+            this.comPortValueLabel.X = 35;
             this.comPortValueLabel.Y = 3;
             this.comPortValueLabel.ColorScheme = this.scheme;
             this.comPortValueLabel.Data = "comPortValueLabel";
