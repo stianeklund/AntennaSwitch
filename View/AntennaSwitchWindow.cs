@@ -1,77 +1,72 @@
 using Terminal.Gui;
 
-namespace AntennaSwitch.View
+namespace AntennaSwitch.View;
+
+public partial class AntennaSwitchWindow
 {
-    public partial class AntennaSwitchWindow
+    private readonly BandDecoder? _bd;
+
+    public AntennaSwitchWindow()
     {
-        private readonly BandDecoder? _bd;
-        private readonly AntennaSwitchClient? _sw;
+        InitializeComponent();
+    }
 
-        public AntennaSwitchWindow()
+    public AntennaSwitchWindow(BandDecoder bd)
+    {
+        InitializeComponent();
+        UseOmniRig = useOmniRigCheckbox.Checked;
+        useOmniRigCheckbox.Toggled += delegate(bool b) { UseOmniRig = b; };
+
+        _bd = bd;
+
+        switch (UseOmniRig)
         {
-            InitializeComponent();
+            case false:
+                comPortValueLabel.Text = _bd?.SerialPort?.PortName;
+                useOmniRigCheckbox.Visible = false;
+                break;
+            case true:
+                comPortLabel.Visible = false;
+                comPortValueLabel.Visible = false;
+                useOmniRigCheckbox.Visible = true;
+                useOmniRigCheckbox.Checked = true;
+                break;
+        }
+    }
+
+    public bool UseOmniRig { get; set; }
+
+    private void OmniRigradioGroupOnSelectedItemChanged(SelectedItemChangedArgs obj)
+    {
+        if (obj.SelectedItem == 1)
+        {
+            var bandDecoder = _bd;
+            if (bandDecoder != null) bandDecoder.UseOmniRig = false;
         }
 
-        public AntennaSwitchWindow(AntennaSwitchClient? sw, BandDecoder? bd)
+        if (obj.SelectedItem == 0)
         {
-            InitializeComponent();
-            _sw = sw;
-            _bd = bd;
-            if (bd == null) return;
-            bd.UseOmniRig = useOmniRigCheckbox.Checked;
-            useOmniRigCheckbox.Toggled += delegate(bool b)
-            {
-                bd.UseOmniRig = b;
-            };
-            
-
-            switch (bd)
-            {
-                case { UseOmniRig: false }:
-                    comPortValueLabel.Text = _bd?.SerialPort?.PortName;
-                    useOmniRigCheckbox.Visible = false;
-                    break;
-                case { UseOmniRig: true }:
-                    comPortLabel.Visible = false;
-                    comPortValueLabel.Visible = false;
-                    useOmniRigCheckbox.Visible = true;
-                    useOmniRigCheckbox.Checked = true;
-                    break;
-            }
+            var bandDecoder = _bd;
+            if (bandDecoder != null) bandDecoder.UseOmniRig = true;
+            bandDecoder?.OmniRigClient?.StartOmniRig();
         }
+    }
 
-        private void OmniRigradioGroupOnSelectedItemChanged(SelectedItemChangedArgs obj)
+    public void UpdateValues(BandDecoder bd)
+    {
+        try
         {
-            if (obj.SelectedItem == 1)
-            {
-                var bandDecoder = _bd;
-                if (bandDecoder != null) bandDecoder.UseOmniRig = false;
-            }
-            if (obj.SelectedItem == 0)
-            {
-                var bandDecoder = _bd;
-                if (bandDecoder != null) bandDecoder.UseOmniRig = true;
-                bandDecoder?.OmniRigClient?.StartOmniRig();
-            }
+            if (_bd == null) return;
+
+            currentAntennaValueLabel.Text = bd.AntennaSwitchClient.SelectedAntenna.ToString();
+            wantedAntennaValueLabel.Text = bd.AntennaSwitchClient.WantedAntenna.ToString();
+            supportsBandCheckBox.Checked = bd.AntennaSwitchClient.SupportsBand;
+
+            frequencyValueLabel.Text = bd.Frequency;
+            bandValueLabel.Text = bd.BandName;
         }
-
-        public void UpdateValues()
+        catch
         {
-            try
-            {
-                if (_sw != null)
-                {
-                    currentAntennaValueLabel.Text = _sw.SelectedAntenna.ToString();
-                    wantedAntennaValueLabel.Text = _sw.WantedAntenna.ToString();
-                    supportsBandCheckBox.Checked = _sw.SupportsBand;
-                }
-
-                frequencyValueLabel.Text = _bd?.Frequency;
-                bandValueLabel.Text = _bd?.BandName;
-            }
-            catch
-            {
-            }
         }
     }
 }

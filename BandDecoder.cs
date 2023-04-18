@@ -13,44 +13,50 @@ namespace AntennaSwitch;
 /// </summary>
 public sealed class BandDecoder : IDisposable
 {
-    private readonly AntennaSwitchClient _antennaSwitch;
+    public readonly AntennaSwitchClient AntennaSwitchClient;
     public readonly OmniRigClient? OmniRigClient = OmniRigClient.CreateInstance();
     private bool _disposed;
-    public bool UseOmniRig { get; set; }
 
-    public BandDecoder(AntennaSwitchClient antennaSwitch)
+    public BandDecoder(AntennaSwitchClient antennaSwitchClient, bool useOmniRig)
     {
-        _antennaSwitch = antennaSwitch;
-        _antennaSwitch.SelectedAntenna = AntennaSwitchClient.AntennaType.None;
-        _antennaSwitch.WantedAntenna = AntennaSwitchClient.AntennaType.None;
+        AntennaSwitchClient = antennaSwitchClient;
+        UseOmniRig = useOmniRig;
+        AntennaSwitchClient.SelectedAntenna = AntennaSwitchClient.AntennaType.None;
+        AntennaSwitchClient.WantedAntenna = AntennaSwitchClient.AntennaType.None;
 
-        var bandDecoder = new Timer();
-        bandDecoder.Enabled = true;
-        bandDecoder.Interval = 1000;
-        bandDecoder.AutoReset = true;
-        bandDecoder.Elapsed += BandDecoderTimer;
+        Timer = new Timer();
+        Timer.Enabled = true;
+        Timer.Interval = 1000;
+        Timer.AutoReset = true;
+        Timer.Elapsed += BandDecoderTimer;
 
         switch (UseOmniRig)
         {
             case true:
                 OmniRigClient.StartOmniRig();
-                if (OmniRigClient?.OmniRigEngine != null)
-                {
-                    OmniRigClient.OmniRigEngine.StatusChange += OmniRigEngineOnStatusChange;
-                }
                 break;
             case false:
-                SerialPort = new();
+                SerialPort = new SerialPort();
                 OpenSerialPort();
                 break;
         }
+
+        if (OmniRigClient?.OmniRigEngine != null)
+        {
+            OmniRigClient.OmniRigEngine.ParamsChange += OmniRigEngineOnParamsChange;
+            OmniRigClient.OmniRigEngine.StatusChange += OmniRigEngineOnStatusChange;
+        }
     }
 
-    public SerialPort? SerialPort { get; }
+    public bool UseOmniRig { get; set; }
+    public Timer Timer { get; }
+
+    public SerialPort? SerialPort { get; set; }
 
     public string? BandName { get; private set; }
     public string? Mode { get; private set; }
     public string? Frequency { get; private set; }
+    public string? Status { get; private set; }
 
     public void Dispose()
     {
@@ -58,15 +64,32 @@ public sealed class BandDecoder : IDisposable
         GC.SuppressFinalize(this);
     }
 
+    private void OmniRigEngineOnParamsChange(int rigNumber, int @params)
+    {
+        Console.WriteLine($"{rigNumber} {@params}");
+    }
+
     private void OmniRigEngineOnStatusChange(int rigNumber)
     {
-        Console.WriteLine($"Status change:{rigNumber}");
+        Status = rigNumber.ToString();
     }
 
     private void BandDecoderTimer(object? sender, ElapsedEventArgs e)
     {
-        if (Frequency == null && UseOmniRig) Frequency = OmniRigClient?.Rig?.GetRxFrequency().ToString();
-        if (Frequency != null && !_antennaSwitch.Switching) DecodeBand(Frequency);
+        if (UseOmniRig)
+        {
+            if (string.Equals(Frequency, OmniRigClient?.Rig?.Freq.ToString(), StringComparison.Ordinal))
+            {
+                if (AntennaSwitchClient.Band == BandName) return;
+
+                if (AntennaSwitchClient.Band != BandName) Frequency = OmniRigClient?.Rig?.Freq.ToString();
+            }
+
+            Frequency = OmniRigClient?.Rig?.Freq.ToString();
+        }
+
+
+        if (Frequency != null && !AntennaSwitchClient.Switching) DecodeBand(Frequency);
         OmniRigClient?.ShowRigParams();
         Mode = OmniRigClient?.Mode;
     }
@@ -130,62 +153,62 @@ public sealed class BandDecoder : IDisposable
         {
             case >= 1810000 and <= 2000000:
                 BandName = "160m";
-                _antennaSwitch.SupportsBand = false;
+                AntennaSwitchClient.SupportsBand = false;
                 break;
             case >= 3500000 and <= 3800000:
                 BandName = "80m";
-                _antennaSwitch.SupportsBand = true;
-                _antennaSwitch.WantedAntenna = AntennaSwitchClient.AntennaType.EndFed;
+                AntennaSwitchClient.SupportsBand = true;
+                AntennaSwitchClient.WantedAntenna = AntennaSwitchClient.AntennaType.EndFed;
                 break;
             // Not sure if 590 can use this band w/o memory setup but nevertheless it's supported, although no antenna for it currently
             case >= 5102000 and <= 5406500:
                 BandName = "60m";
-                _antennaSwitch.SupportsBand = false;
-                _antennaSwitch.WantedAntenna = AntennaSwitchClient.AntennaType.EndFed;
+                AntennaSwitchClient.SupportsBand = false;
+                AntennaSwitchClient.WantedAntenna = AntennaSwitchClient.AntennaType.EndFed;
                 break;
             case >= 7000000 and <= 7200000:
                 BandName = "40m";
-                _antennaSwitch.SupportsBand = false;
+                AntennaSwitchClient.SupportsBand = false;
                 break;
             case >= 10100000 and <= 10150000:
                 BandName = "30m";
-                _antennaSwitch.SupportsBand = false;
+                AntennaSwitchClient.SupportsBand = false;
                 break;
             case >= 14000000 and <= 14350000:
                 BandName = "20m";
-                _antennaSwitch.SupportsBand = true;
-                _antennaSwitch.WantedAntenna = AntennaSwitchClient.AntennaType.EndFed;
+                AntennaSwitchClient.SupportsBand = true;
+                AntennaSwitchClient.WantedAntenna = AntennaSwitchClient.AntennaType.EndFed;
                 break;
             case >= 18068000 and <= 18168000:
                 BandName = "17m";
-                _antennaSwitch.SupportsBand = true;
-                _antennaSwitch.WantedAntenna = AntennaSwitchClient.AntennaType.Vertical;
+                AntennaSwitchClient.SupportsBand = true;
+                AntennaSwitchClient.WantedAntenna = AntennaSwitchClient.AntennaType.Vertical;
                 break;
             case >= 21000000 and <= 21450000:
                 BandName = "15m";
-                _antennaSwitch.SupportsBand = true;
-                _antennaSwitch.WantedAntenna = AntennaSwitchClient.AntennaType.EndFed;
+                AntennaSwitchClient.SupportsBand = true;
+                AntennaSwitchClient.WantedAntenna = AntennaSwitchClient.AntennaType.EndFed;
                 break;
             case >= 24890000 and <= 24990000:
                 BandName = "12m";
-                _antennaSwitch.SupportsBand = true;
-                _antennaSwitch.WantedAntenna = AntennaSwitchClient.AntennaType.EndFed;
+                AntennaSwitchClient.SupportsBand = true;
+                AntennaSwitchClient.WantedAntenna = AntennaSwitchClient.AntennaType.EndFed;
                 break;
             case >= 28000000 and <= 29700000:
                 BandName = "10m";
-                _antennaSwitch.SupportsBand = true;
-                _antennaSwitch.WantedAntenna = AntennaSwitchClient.AntennaType.Dipole;
+                AntennaSwitchClient.SupportsBand = true;
+                AntennaSwitchClient.WantedAntenna = AntennaSwitchClient.AntennaType.Dipole;
                 break;
             // Just so we can use the 6m beam for rx, it's better than anything else..
             case >= 40660000 and <= 40700000:
                 BandName = "8m";
-                _antennaSwitch.SupportsBand = true;
-                _antennaSwitch.WantedAntenna = AntennaSwitchClient.AntennaType.Beam;
+                AntennaSwitchClient.SupportsBand = true;
+                AntennaSwitchClient.WantedAntenna = AntennaSwitchClient.AntennaType.Beam;
                 break;
             case >= 50000000 and <= 52000000:
                 BandName = "6m";
-                _antennaSwitch.SupportsBand = true;
-                _antennaSwitch.WantedAntenna = AntennaSwitchClient.AntennaType.Beam;
+                AntennaSwitchClient.SupportsBand = true;
+                AntennaSwitchClient.WantedAntenna = AntennaSwitchClient.AntennaType.Beam;
                 break;
             default:
                 //>= 144000000 and <= 146000000 => 11 //   2m
@@ -195,8 +218,8 @@ public sealed class BandDecoder : IDisposable
         }
 
         // Switch only if the band is supported by the switch and we're not actively switching inputs
-        if (_antennaSwitch is { SupportsBand: true, Switching: false })
-            _antennaSwitch.SetAntennaSwitchToWantedAntenna();
+        if (AntennaSwitchClient is { SupportsBand: true, Switching: false })
+            AntennaSwitchClient.SetAntennaSwitchToWantedAntenna();
     }
 
 
@@ -226,13 +249,11 @@ public sealed class BandDecoder : IDisposable
         if (_disposed) return;
 
         if (disposing)
-        {
             if (SerialPort != null)
             {
                 SerialPort.DataReceived -= SerialPortOnDataReceived;
                 SerialPort.Dispose();
             }
-        }
 
         _disposed = true;
     }

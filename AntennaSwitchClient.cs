@@ -25,8 +25,6 @@ public class AntennaSwitchClient
     }
 
     private readonly HttpClient _client;
-    private readonly string _down = new($"{Url}4/on");
-    private readonly string _up = new($"{Url}/5/on");
     public bool Switching;
 
     public AntennaSwitchClient(string ip, int port)
@@ -57,6 +55,7 @@ public class AntennaSwitchClient
     public AntennaType SelectedAntenna { get; set; }
 
     public bool SupportsBand { get; set; }
+    public string? Band { get; set; }
 
     private void SetupHttpClient(string url)
     {
@@ -67,33 +66,47 @@ public class AntennaSwitchClient
         _client.Timeout = new TimeSpan(0, 1, 0);
     }
 
-    public void GetSelectedAntennaFromSwitch(Direction direction)
+    public async Task<AntennaType> GetSelectedAntennaFromSwitch(Direction direction)
     {
-        var s = direction switch
+        try
         {
-            Direction.Up => _client.GetStringAsync(_up).Result,
-            Direction.Down => _client.GetStringAsync(_down).Result,
-            Direction.None or _ => _client.GetStringAsync(Url).Result
-        };
+            var s = direction switch
+            {
+                Direction.Up => await _client.GetStringAsync($"{Url}/5/on"),
+                Direction.Down => await _client.GetStringAsync($"{Url}/4/on"),
+                Direction.None or _ => await _client.GetStringAsync($"{Url}")
+            };
 
-        if (s.Substring(577, 6).Contains("GROUND"))
+            AntennaType antenna;
+            if (s.Substring(577, 6).Contains("GROUND"))
+            {
+                antenna = AntennaType.Ground;
+                return antenna;
+            }
+
+            var selected = s.Substring(574, 1);
+
+            // Set the selected antenna based on the parsed result from the switch
+            antenna = selected switch
+            {
+                "4" => AntennaType.EndFed,
+                "3" => AntennaType.Vertical,
+                "2" => AntennaType.Dipole,
+                "1" => AntennaType.Beam,
+                _ => AntennaType.None
+            };
+
+            return antenna;
+        }
+        catch (Exception)
+
         {
-            SelectedAntenna = AntennaType.Ground;
-            return;
+            Networking.ConnectToFallBackNetwork();
         }
 
-        var selected = s.Substring(574, 1);
-
-        // Set the selected antenna based on the parsed result from the switch
-        SelectedAntenna = selected switch
-        {
-            "4" => AntennaType.EndFed,
-            "3" => AntennaType.Vertical,
-            "2" => AntennaType.Dipole,
-            "1" => AntennaType.Beam,
-            _ => AntennaType.None
-        };
+        throw new InvalidOperationException();
     }
+
 
     /// <summary>
     ///     Sets the selected antenna switch to the wanted input based on the currently selected antenna and
@@ -101,10 +114,12 @@ public class AntennaSwitchClient
     ///     The wanted antenna is set by the band indexing / band decoder logic and this simply moves the switch
     ///     in the direction necessary to get the correct antenna
     /// </summary>
-    public void SetAntennaSwitchToWantedAntenna()
+    public async void SetAntennaSwitchToWantedAntenna()
     {
         // Make sure we have the latest antenna info to work with
-        if (SelectedAntenna is AntennaType.None && !Switching) GetSelectedAntennaFromSwitch(Direction.None);
+        if (SelectedAntenna is AntennaType.None && !Switching)
+            SelectedAntenna = await GetSelectedAntennaFromSwitch(Direction.None);
+
         if (SelectedAntenna == WantedAntenna) return;
 
         if (SelectedAntenna > WantedAntenna)
@@ -120,20 +135,18 @@ public class AntennaSwitchClient
         }
     }
 
+
     /// <summary>
     ///     Sets the antenna switch to the requested position
     /// </summary>
     /// <param name="direction"> Up or down, or just querying the website</param>
     /// <param name="steps"> the amount of times we need to go in either direction</param>
-    private void SetAntennaSwitchToPosition(Direction direction, int steps = 1)
+    private async void SetAntennaSwitchToPosition(Direction direction, int steps = 1)
     {
         for (var j = 0; j < steps; j++)
         {
-            if (SelectedAntenna == WantedAntenna)
-                return;
-            GetSelectedAntennaFromSwitch(direction);
-            // We need to wait a little for the web interface to update..
-            Thread.Sleep(1000);
+            if (SelectedAntenna == WantedAntenna) return;
+            SelectedAntenna = await GetSelectedAntennaFromSwitch(direction);
             Switching = true;
         }
 

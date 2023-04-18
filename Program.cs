@@ -6,8 +6,10 @@ namespace AntennaSwitch;
 
 public static class Program
 {
+    public const string FallbackIp = "192.168.4.1";
     private const string SwitchIp = "192.168.8.140";
     private static AntennaSwitchWindow? _window;
+
     private static void Main()
     {
         Application.Init();
@@ -16,16 +18,20 @@ public static class Program
         if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) Console.SetWindowSize(48, 7);
 
         var sw = new AntennaSwitchClient(SwitchIp);
-        var bd = new BandDecoder(sw);
-        _window = new AntennaSwitchWindow(sw, bd);
+        var bd = new BandDecoder(sw, true);
+        _window = new AntennaSwitchWindow(bd);
 
-        sw.GetSelectedAntennaFromSwitch(AntennaSwitchClient.Direction.None);
+        Task.Run(async () =>
+        {
+            sw.SelectedAntenna = await sw.GetSelectedAntennaFromSwitch(AntennaSwitchClient.Direction.None);
+        });
 
         Application.MainLoop.AddTimeout(TimeSpan.FromMilliseconds(1000), _ =>
+
         {
             try
             {
-                _window.UpdateValues();
+                _window.UpdateValues(bd);
             }
             catch (Exception e)
             {

@@ -3,10 +3,10 @@ using OmniRig;
 
 namespace AntennaSwitch.OmniRig;
 
-public class OmniRigClient: IDisposable
+public class OmniRigClient : IDisposable
 {
-    private string RxFrequency;
-    private string TxFrequency;
+    // private string RxFrequency;
+    // private string TxFrequency;
     private bool _disposed;
 
     public OmniRigX? OmniRigEngine { get; private set; }
@@ -19,6 +19,12 @@ public class OmniRigClient: IDisposable
     private string? Frequency { get; set; }
 
     public string? Mode { get; private set; }
+
+    public void Dispose()
+    {
+        GC.SuppressFinalize(this);
+        Dispose(true);
+    }
 
     public static OmniRigClient CreateInstance()
     {
@@ -35,15 +41,14 @@ public class OmniRigClient: IDisposable
             }
             else
             {
-                OmniRigEngine = Activator.CreateInstance(typeof(MarshalByRefObject) ??
-                                                         throw new InvalidOperationException()) as OmniRigX;
+                if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                    OmniRigEngine = (OmniRigX)Activator.CreateInstance(Type.GetTypeFromProgID("OmniRig.OmniRigX") ??
+                                                                       throw new InvalidOperationException())!;
 
                 //  Supported versions 1.01 to 2.99 anything outside of that is probably not compatible
                 if (OmniRigEngine?.InterfaceVersion < 0x101 &&
                     OmniRigEngine?.InterfaceVersion > 0x299)
-                {
                     OmniRigEngine = null;
-                }
 
                 SelectRig(1);
             }
@@ -81,10 +86,14 @@ public class OmniRigClient: IDisposable
     // Only a small subset commands are supported
     public void ShowRigParams()
     {
-        if (Rig == null) return;
+        if (Rig == null)
+        {
+            Status = "ShowRigParams: Rig is null";
+            return;
+        }
 
-        RxFrequency = Rig.GetRxFrequency().ToString();
-        TxFrequency = Rig.GetTxFrequency().ToString();
+        // RxFrequency = Rig.GetRxFrequency().ToString();
+        // TxFrequency = Rig.GetTxFrequency().ToString();
         Frequency = Rig.Freq.ToString();
 
         Mode = Rig.Mode switch
@@ -109,29 +118,20 @@ public class OmniRigClient: IDisposable
                 // TODO Not sure if this is the correct way to do this..
                 if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
                 {
-                    int ret = Marshal.ReleaseComObject(OmniRigEngine);
+                    var ret = Marshal.ReleaseComObject(OmniRigEngine);
                 }
 
                 OmniRigEngine = null;
             }
 
-            if (Rig != null)
-            {
-                Rig = null;
-            }
+            if (Rig != null) Rig = null;
         }
 
         _disposed = true;
     }
-    
-        ~OmniRigClient()
-        {
-            Dispose(false);
-        }
 
-        public void Dispose()
-        {
-            GC.SuppressFinalize(this);
-            Dispose(true);
-        }
+    ~OmniRigClient()
+    {
+        Dispose(false);
+    }
 }
