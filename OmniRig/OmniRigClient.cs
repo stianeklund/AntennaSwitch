@@ -1,22 +1,31 @@
-﻿using System.Runtime.InteropServices;
-using OmniRig;
+﻿using OmniRigWrapper;
 
 namespace AntennaSwitch.OmniRig;
 
 public class OmniRigClient : IDisposable
 {
+    private OmniRigWrapperClass OmniRigWrapper;
     // private string RxFrequency;
     // private string TxFrequency;
     private bool _disposed;
 
-    public OmniRigX? OmniRigEngine { get; private set; }
-    public RigX? Rig { get; private set; }
+    public OmniRigClient()
+    {
+        OmniRigWrapper = new OmniRigWrapperClass();
+        OmniRigWrapper.StartOmniRig();
+        CurrentRigNumber = OmniRigWrapper.CurrentRigNo;
+        Status = OmniRigWrapper.Status;
+        Frequency = OmniRigWrapper.Frequency;
+        Mode = OmniRigWrapper.Mode;
+    }
 
-    private int CurrentRigNumber { get; set; }
+    public string? Rig { get; private set; }
 
-    private string? Status { get; set; }
+    public int CurrentRigNumber { get; set; }
 
-    private string? Frequency { get; set; }
+    public string? Status { get; set; }
+
+    public string? Frequency { get; set; }
 
     public string? Mode { get; private set; }
 
@@ -35,23 +44,7 @@ public class OmniRigClient : IDisposable
     {
         try
         {
-            if (OmniRigEngine != null)
-            {
-                Console.WriteLine("OmniRig is already running");
-            }
-            else
-            {
-                if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-                    OmniRigEngine = (OmniRigX)Activator.CreateInstance(Type.GetTypeFromProgID("OmniRig.OmniRigX") ??
-                                                                       throw new InvalidOperationException())!;
-
-                //  Supported versions 1.01 to 2.99 anything outside of that is probably not compatible
-                if (OmniRigEngine?.InterfaceVersion < 0x101 &&
-                    OmniRigEngine?.InterfaceVersion > 0x299)
-                    OmniRigEngine = null;
-
-                SelectRig(1);
-            }
+            OmniRigWrapper.StartOmniRig();
         }
         catch (Exception e)
         {
@@ -61,51 +54,29 @@ public class OmniRigClient : IDisposable
 
     private void SelectRig(int rigNumber)
     {
-        if (OmniRigEngine == null)
-            return;
-
-        CurrentRigNumber = rigNumber;
-
-        Rig = rigNumber switch
-        {
-            1 => OmniRigEngine.Rig1,
-            2 => OmniRigEngine.Rig2,
-            _ => Rig
-        };
-
-        ShowRigStatus();
-        ShowRigParams();
+       OmniRigWrapper.SelectRig(rigNumber);
     }
 
     private void ShowRigStatus()
     {
-        if (Rig != null)
-            Status = Rig.StatusStr;
+        OmniRigWrapper.ShowRigStatus();
+        Status = OmniRigWrapper.Status;
     }
 
     // Only a small subset commands are supported
     public void ShowRigParams()
     {
+        OmniRigWrapper.ShowRigParams();
         if (Rig == null)
         {
             Status = "ShowRigParams: Rig is null";
             return;
         }
+        
 
         // RxFrequency = Rig.GetRxFrequency().ToString();
         // TxFrequency = Rig.GetTxFrequency().ToString();
-        Frequency = Rig.Freq.ToString();
-
-        Mode = Rig.Mode switch
-        {
-            RigParamX.PM_CW_L => "CW",
-            RigParamX.PM_CW_U => "CW-R",
-            RigParamX.PM_SSB_L => "LSB",
-            RigParamX.PM_SSB_U => "USB",
-            RigParamX.PM_FM => "FM",
-            RigParamX.PM_AM => "AM",
-            _ => "Other"
-        };
+        Frequency = OmniRigWrapper.Frequency;
     }
 
     private void Dispose(bool disposing)
@@ -113,18 +84,7 @@ public class OmniRigClient : IDisposable
         if (_disposed) return;
         if (disposing)
         {
-            if (OmniRigEngine != null)
-            {
-                // TODO Not sure if this is the correct way to do this..
-                if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-                {
-                    var ret = Marshal.ReleaseComObject(OmniRigEngine);
-                }
-
-                OmniRigEngine = null;
-            }
-
-            if (Rig != null) Rig = null;
+                OmniRigWrapper.Dispose();
         }
 
         _disposed = true;

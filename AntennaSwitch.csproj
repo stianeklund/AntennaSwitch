@@ -7,6 +7,7 @@
         <Nullable>enable</Nullable>
     </PropertyGroup>
 
+<!--
     <ItemGroup>
         <COMReference Include="OmniRig">
             <WrapperTool>tlbimp</WrapperTool>
@@ -18,10 +19,18 @@
             <EmbedInteropTypes>true</EmbedInteropTypes>
         </COMReference>
     </ItemGroup>
+-->
 
     <ItemGroup>
-        <PackageReference Include="ManagedNativeWifi" Version="2.5.0"/>
-        <PackageReference Include="System.IO.Ports" Version="7.0.0"/>
-        <PackageReference Include="Terminal.Gui" Version="1.10.1"/>
+        <PackageReference Include="ManagedNativeWifi" Version="2.5.0" />
+        <PackageReference Include="System.IO.Ports" Version="7.0.0" />
+        <PackageReference Include="Terminal.Gui" Version="1.10.1" />
     </ItemGroup>
+
+    <ItemGroup>
+      <Reference Include="OmniRigWrapper">
+        <HintPath>..\OmniRigWrapper\OmniRigWrapper\bin\Release\OmniRigWrapper.dll</HintPath>
+      </Reference>
+    </ItemGroup>
+    
 </Project>

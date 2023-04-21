@@ -40,12 +40,6 @@ public sealed class BandDecoder : IDisposable
                 OpenSerialPort();
                 break;
         }
-
-        if (OmniRigClient?.OmniRigEngine != null)
-        {
-            OmniRigClient.OmniRigEngine.ParamsChange += OmniRigEngineOnParamsChange;
-            OmniRigClient.OmniRigEngine.StatusChange += OmniRigEngineOnStatusChange;
-        }
     }
 
     public bool UseOmniRig { get; set; }
@@ -78,14 +72,14 @@ public sealed class BandDecoder : IDisposable
     {
         if (UseOmniRig)
         {
-            if (string.Equals(Frequency, OmniRigClient?.Rig?.Freq.ToString(), StringComparison.Ordinal))
+            if (string.Equals(Frequency, OmniRigClient?.Frequency, StringComparison.Ordinal))
             {
                 if (AntennaSwitchClient.Band == BandName) return;
 
-                if (AntennaSwitchClient.Band != BandName) Frequency = OmniRigClient?.Rig?.Freq.ToString();
+                if (AntennaSwitchClient.Band != BandName) Frequency = OmniRigClient?.Frequency;
             }
 
-            Frequency = OmniRigClient?.Rig?.Freq.ToString();
+            Frequency = OmniRigClient?.Frequency;
         }
 
 

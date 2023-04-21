@@ -104,7 +104,7 @@ public class AntennaSwitchClient
             Networking.ConnectToFallBackNetwork();
         }
 
-        throw new InvalidOperationException();
+        throw new InvalidOperationException(nameof(SelectedAntenna));
     }
 
 
